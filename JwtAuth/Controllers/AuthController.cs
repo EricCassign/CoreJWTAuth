@@ -1,19 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace JwtAuth.Controllers
 {
-    [Route("api/[controller]")]
+    [Produces("application/json")]
+    [Route("api/v1/[controller]")]
     [ApiController]
-    public class ValuesController : ControllerBase
+    public class AuthController : Controller
     {
-        // GET api/values
+        // GET api/auth/v1
         [HttpGet]
-        public ActionResult<IEnumerable<string>> Get()
+        public string Get()
         {
-            return new string[] { "value1", "value2" };
+            return DateTime.UtcNow.ToString("F") + " API is up and Running";
         }
 
         [HttpGet("[action]")]
@@ -39,10 +44,24 @@ namespace JwtAuth.Controllers
             return "value";
         }
 
-        // POST api/values
+        // POST api/v1/token
         [HttpPost]
-        public void Post([FromBody] string value)
+        public JsonResult Post([FromBody] string username)
         {
+            var claims = new[] { new Claim(ClaimTypes.Name, username), new Claim(ClaimTypes.UserData, "Hello World") };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(username));
+            var signInCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
+
+            var token = new JwtSecurityToken
+            (
+                issuer: "cspro.com",
+                audience: "cspro.com",
+                claims: claims,
+                signingCredentials: signInCredentials,
+                expires: DateTime.UtcNow.AddMinutes(2)
+            );
+            return Json(new { token });
         }
 
         // PUT api/values/5
