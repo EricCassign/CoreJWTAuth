@@ -5,15 +5,21 @@ using System.Security.Claims;
 using System.Text;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 namespace JwtAuth.Controllers
 {
     [Produces("application/json")]
     [Route("api/v1/[controller]")]
-    [ApiController]
+    //[ApiController]
     public class AuthController : Controller
     {
+        public readonly IConfiguration _configuration;
+        public AuthController(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
         // GET api/auth/v1
         [HttpGet]
         public string Get()
@@ -32,48 +38,49 @@ namespace JwtAuth.Controllers
             }
             catch (ApplicationException ae)
             {
-                Log.Instance.ErrorException("Error doing something...", ae);
+                Log.Instance.Error("Error doing something...", ae);
                 return new JsonResult("Error");
             }
         }
+         
 
-        // GET api/values/5
-        [HttpGet("{id}")]
-        public ActionResult<string> Get(int id)
+        [HttpPost("[action]")]
+        public JsonResult GenerateToken([FromBody] string o)
         {
-            return "value";
-        }
+            try
+            {
+                var site = _configuration["AuthSettings:SiteName"];
+                var siteKey = _configuration["AuthSettings:SecurityKey"];
+                var userData = new { Username = o, Time = DateTime.UtcNow };
 
-        // POST api/v1/token
-        [HttpPost]
-        public JsonResult Post([FromBody] string username)
-        {
-            var claims = new[] { new Claim(ClaimTypes.Name, username), new Claim(ClaimTypes.UserData, "Hello World") };
+                var claims = new[] { new Claim(ClaimTypes.Name, o), new Claim(ClaimTypes.UserData, JsonConvert.SerializeObject(userData)) };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(username));
-            var signInCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
+                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(siteKey));
+                var signInCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
 
-            var token = new JwtSecurityToken
-            (
-                issuer: "cspro.com",
-                audience: "cspro.com",
-                claims: claims,
-                signingCredentials: signInCredentials,
-                expires: DateTime.UtcNow.AddMinutes(2)
-            );
-            return Json(new { token });
+                var token = new JwtSecurityToken
+                (
+                    issuer: site,
+                    audience: site,
+                    claims: claims,
+                    signingCredentials: signInCredentials,
+                    expires: DateTime.UtcNow.AddMinutes(2)
+                );
+                var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+                return Json(new { Success = true, Message = "Generated", Raw = token, String = tokenString });
+            }
+            catch (Exception e)
+            {
+                return Json(new { Success = false, Message = "Error Occured :" + e.Message, Code = 500 });
+            }
         }
 
         // PUT api/values/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [HttpPut("[action]")]
+        public JsonResult Put([FromBody] string value)
         {
+            return Json(new { Success = true, Message = "Value Put :" + value, });
         }
-
-        // DELETE api/values/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
+         
     }
 }
