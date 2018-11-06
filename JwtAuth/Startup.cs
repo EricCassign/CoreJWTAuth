@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -38,6 +39,7 @@ namespace JwtAuth
                     ValidIssuer = site,
                     ValidAudience = site,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(siteKey)),
+                    // IssuerSigningKey = new X509SecurityKey(new X509Certificate2())
                 };
             });
         }
@@ -54,7 +56,8 @@ namespace JwtAuth
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
             });
-            //app.UseAuthentication();
+
+            app.UseAuthentication();
             app.UseMvc();
         }
     }
