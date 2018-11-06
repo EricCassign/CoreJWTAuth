@@ -45,15 +45,15 @@ namespace JwtAuth.Controllers
          
 
         [HttpPost("[action]")]
-        public JsonResult GenerateToken([FromBody] string o)
+        public JsonResult GenerateToken([FromBody] TestRequest request)
         {
             try
             {
                 var site = _configuration["AuthSettings:SiteName"];
                 var siteKey = _configuration["AuthSettings:SecurityKey"];
-                var userData = new { Username = o, Time = DateTime.UtcNow };
+                var userData = new { Username = request.Username, Time = DateTime.UtcNow };
 
-                var claims = new[] { new Claim(ClaimTypes.Name, o), new Claim(ClaimTypes.UserData, JsonConvert.SerializeObject(userData)) };
+                var claims = new[] { new Claim(ClaimTypes.Name, request.Username), new Claim(ClaimTypes.UserData, JsonConvert.SerializeObject(userData)) };
 
                 var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(siteKey));
                 var signInCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
