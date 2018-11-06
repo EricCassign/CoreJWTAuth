@@ -57,6 +57,8 @@ namespace JwtAuth
             {
                 app.UseDeveloperExceptionPage();
             }
+            app.UseHsts(options => options.MaxAge(365));
+            app.UseXXssProtection(options => options.EnabledWithBlockMode());
 
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
